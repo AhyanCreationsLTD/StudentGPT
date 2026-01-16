@@ -1,0 +1,234 @@
+/* General Styles */
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #202123;
+    color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden; /* Prevent body scroll */
+}
+
+.app-container {
+    display: flex;
+    width: 95vw; /* Responsive width */
+    max-width: 1400px; /* Max width for large screens */
+    height: 95vh; /* Responsive height */
+    max-height: 900px; /* Max height */
+    background-color: #2f3136;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 250px;
+    background-color: #282a2e;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 1px solid #3c3f44;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    color: #4CAF50; /* A distinct brand color */
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.logo img {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+    border-radius: 8px; /* Slightly rounded logo */
+}
+
+.nav-menu {
+    flex-grow: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    color: #e0e0e0;
+    text-decoration: none;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.nav-item:hover, .nav-item.active {
+    background-color: #3c3f44;
+    color: #4CAF50;
+}
+
+.nav-item .icon {
+    margin-right: 15px;
+    font-size: 1.2rem;
+}
+
+.settings-link {
+    margin-top: 20px;
+    border-top: 1px solid #3c3f44;
+    padding-top: 15px;
+}
+
+/* Chat Area Styles */
+.chat-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #2f3136;
+}
+
+.chat-header {
+    padding: 18px 25px;
+    background-color: #282a2e;
+    border-bottom: 1px solid #3c3f44;
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-align: center;
+    color: #e0e0e0;
+}
+
+.message-container {
+    flex-grow: 1;
+    padding: 25px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+.message-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.message-container::-webkit-scrollbar-track {
+    background: #2f3136;
+}
+
+.message-container::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 10px;
+}
+
+.message {
+    max-width: 70%;
+    padding: 12px 18px;
+    border-radius: 18px;
+    line-height: 1.5;
+}
+
+.bot-message {
+    background-color: #3c3f44;
+    align-self: flex-start;
+    color: #e0e0e0;
+}
+
+.user-message {
+    background-color: #4CAF50; /* Distinct color for user messages */
+    color: white;
+    align-self: flex-end;
+}
+
+.initial-message {
+    background-color: #3c3f44;
+    color: #e0e0e0;
+    text-align: center;
+    align-self: center;
+    max-width: 80%;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+/* Input Area */
+.input-area {
+    padding: 20px 25px;
+    background-color: #282a2e;
+    border-top: 1px solid #3c3f44;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.input-area input[type="text"] {
+    flex-grow: 1;
+    padding: 12px 18px;
+    border: 1px solid #555;
+    border-radius: 25px;
+    background-color: #3c3f44;
+    color: #e0e0e0;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.input-area input[type="text"]:focus {
+    border-color: #4CAF50;
+}
+
+.input-area button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.input-area button:hover {
+    background-color: #45a049;
+}
+
+.input-area button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+.footer-text {
+    text-align: center;
+    padding: 10px;
+    font-size: 0.75rem;
+    color: #888;
+    background-color: #282a2e;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none; /* Hide sidebar on small screens */
+    }
+
+    .app-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .chat-header {
+        font-size: 1.1rem;
+        padding: 15px;
+    }
+
+    .input-area {
+        padding: 15px;
+    }
+    
+    .message {
+        max-width: 90%; /* Messages take more width on small screens */
+    }
+  }
