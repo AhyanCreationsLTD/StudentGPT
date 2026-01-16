@@ -1,5 +1,6 @@
 import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
 
+// কনফিগারেশন
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
@@ -17,62 +18,66 @@ function appendMessage(sender, text) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// লোডিং স্ট্যাটাস দেখানোর ফাংশন
-function updateLoadingStatus(data) {
+// প্রগ্রেস দেখানোর ফাংশন
+function showProgress(data) {
     if (data.status === 'progress') {
-        const progress = data.progress.toFixed(2);
-        // আমরা সরাসরি চ্যাট বক্সে স্ট্যাটাস আপডেট দেখাবো
-        let loader = document.getElementById('ai-loader');
-        if (!loader) {
-            loader = document.createElement('div');
-            loader.id = 'ai-loader';
-            loader.className = 'message bot-message';
-            chatBox.appendChild(loader);
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        
+        if (!progressContainer) {
+            const container = document.createElement('div');
+            container.id = 'progress-container';
+            container.style.display = 'block';
+            container.innerHTML = '<div id="progress-bar"></div>';
+            chatBox.appendChild(container);
         }
-        loader.innerHTML = `<p><strong>StudentGPT:</strong> মডেল ডাউনলোড হচ্ছে: ${progress}% সম্পন্ন।</p>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const bar = document.getElementById('progress-bar');
+        bar.style.width = data.progress + '%';
+        
+        // টেক্সট আপডেট
+        let statusText = document.getElementById('status-text');
+        if (!statusText) {
+            statusText = document.createElement('p');
+            statusText.id = 'status-text';
+            statusText.style.fontSize = '12px';
+            chatBox.appendChild(statusText);
+        }
+        statusText.innerText = `StudentGPT ডাউনলোড হচ্ছে: ${data.progress.toFixed(1)}%`;
     } else if (data.status === 'ready') {
-        const loader = document.getElementById('ai-loader');
-        if (loader) loader.remove();
-        appendMessage('StudentGPT', 'মডেল রেডি! এখন প্রশ্ন করতে পারো।');
+        const container = document.getElementById('progress-container');
+        if (container) container.remove();
+        const statusText = document.getElementById('status-text');
+        if (statusText) statusText.remove();
+        appendMessage('StudentGPT', 'মডেল এখন প্রস্তুত! প্রশ্ন করুন।');
     }
 }
 
 async function loadModel() {
     try {
-        appendMessage('StudentGPT', 'মডেল লোড হওয়া শুরু হয়েছে...');
-        
-        // প্রগ্রেস দেখার জন্য progress_callback যোগ করা হয়েছে
-        generator = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-78M', {
-            progress_callback: updateLoadingStatus
+        // 'Xenova/flan-t5-small' ব্যবহার করছি কারণ এটি সবচেয়ে ছোট এবং দ্রুত (মাত্র ৬০ এমবি)
+        generator = await pipeline('text2text-generation', 'Xenova/flan-t5-small', {
+            progress_callback: showProgress
         });
-        
     } catch (error) {
-        console.error("Model load error:", error);
-        appendMessage('StudentGPT', 'ইন্টারনেট কানেকশন চেক করে আবার চেষ্টা করো।');
+        console.error("Error:", error);
+        appendMessage('StudentGPT', 'মডেল লোড হতে সমস্যা হচ্ছে। অনুগ্রহ করে পেজটি রিফ্রেশ দিন।');
     }
 }
 
-async function generateResponse(userText) {
-    if (!generator) return "মডেল এখনও লোড হয়নি।";
-    const output = await generator(userText, {
-        max_new_tokens: 200,
-        temperature: 0.7,
-    });
+async function generateResponse(text) {
+    if (!generator) return "দয়া করে মডেল লোড হওয়া পর্যন্ত অপেক্ষা করুন।";
+    const output = await generator(text, { max_new_tokens: 100 });
     return output[0].generated_text;
 }
 
 sendBtn.onclick = async () => {
     const text = userInput.value.trim();
     if (!text || !generator) return;
-
     appendMessage('You', text);
     userInput.value = '';
-
     const response = await generateResponse(text);
     appendMessage('StudentGPT', response);
 };
-
-userInput.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
 
 window.onload = loadModel;
