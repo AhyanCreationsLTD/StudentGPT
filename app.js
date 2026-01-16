@@ -1,6 +1,5 @@
 import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
 
-// গিটহাব পেজের জন্য প্রয়োজনীয় কনফিগারেশন
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
@@ -18,32 +17,49 @@ function appendMessage(sender, text) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// লোডিং স্ট্যাটাস দেখানোর ফাংশন
+function updateLoadingStatus(data) {
+    if (data.status === 'progress') {
+        const progress = data.progress.toFixed(2);
+        // আমরা সরাসরি চ্যাট বক্সে স্ট্যাটাস আপডেট দেখাবো
+        let loader = document.getElementById('ai-loader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'ai-loader';
+            loader.className = 'message bot-message';
+            chatBox.appendChild(loader);
+        }
+        loader.innerHTML = `<p><strong>StudentGPT:</strong> মডেল ডাউনলোড হচ্ছে: ${progress}% সম্পন্ন।</p>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    } else if (data.status === 'ready') {
+        const loader = document.getElementById('ai-loader');
+        if (loader) loader.remove();
+        appendMessage('StudentGPT', 'মডেল রেডি! এখন প্রশ্ন করতে পারো।');
+    }
+}
+
 async function loadModel() {
     try {
-        appendMessage('StudentGPT', 'মডেল লোড হওয়া শুরু হয়েছে... প্রথমবার প্রায় ৮০-১০০ এমবি ফাইল ডাউনলোড হবে। অনুগ্রহ করে ১-২ মিনিট অপেক্ষা করুন এবং ইন্টারনেট কানেকশন চেক করুন।');
+        appendMessage('StudentGPT', 'মডেল লোড হওয়া শুরু হয়েছে...');
         
-        // আমরা আরও ছোট একটি মডেল ব্যবহার করছি দ্রুত লোড হওয়ার জন্য
-        generator = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-78M');
+        // প্রগ্রেস দেখার জন্য progress_callback যোগ করা হয়েছে
+        generator = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-78M', {
+            progress_callback: updateLoadingStatus
+        });
         
-        appendMessage('StudentGPT', 'অভিনন্দন! মডেল লোড সম্পন্ন হয়েছে। এখন আপনি পড়াশোনা বিষয়ক যে কোনো প্রশ্ন করতে পারেন।');
     } catch (error) {
         console.error("Model load error:", error);
-        appendMessage('StudentGPT', 'দুঃখিত! মডেলটি ডাউনলোড হতে বাধা পাচ্ছে। আপনার ইন্টারনেট চেক করে পেজটি রিফ্রেশ (Refresh) দিন।');
+        appendMessage('StudentGPT', 'ইন্টারনেট কানেকশন চেক করে আবার চেষ্টা করো।');
     }
 }
 
 async function generateResponse(userText) {
-    if (!generator) return "মডেল এখনও তৈরি নয়।";
-
-    try {
-        const output = await generator(userText, {
-            max_new_tokens: 150,
-            temperature: 0.7,
-        });
-        return output[0].generated_text;
-    } catch (error) {
-        return "উত্তরের জন্য প্রসেস করার সময় একটি সমস্যা হয়েছে।";
-    }
+    if (!generator) return "মডেল এখনও লোড হয়নি।";
+    const output = await generator(userText, {
+        max_new_tokens: 200,
+        temperature: 0.7,
+    });
+    return output[0].generated_text;
 }
 
 sendBtn.onclick = async () => {
@@ -59,5 +75,4 @@ sendBtn.onclick = async () => {
 
 userInput.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
 
-// পেজ লোড হলে মডেল শুরু হবে
 window.onload = loadModel;
