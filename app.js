@@ -1,83 +1,89 @@
 import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
 
-// কনফিগারেশন
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
-const chatBox = document.getElementById('chat-box');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
+const micBtn = document.getElementById('mic-btn');
+const status = document.getElementById('status');
+const userTextDisplay = document.getElementById('user-text');
+const aiTextDisplay = document.getElementById('ai-text');
+const progressBar = document.getElementById('progress-bar');
+const loadStatus = document.getElementById('load-status');
+const loadPerc = document.getElementById('load-perc');
+const loaderArea = document.getElementById('loader-area');
 
 let generator = null;
 
-function appendMessage(sender, text) {
-    const messageElement = document.createElement('div');
-    messageElement.className = `message ${sender === 'You' ? 'user-message' : 'bot-message'}`;
-    messageElement.innerHTML = `<p><strong>${sender}:</strong> ${text}</p>`;
-    chatBox.appendChild(messageElement);
-    chatBox.scrollTop = chatBox.scrollHeight;
+// AI কথা বলার ফাংশন
+function speak(text) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US'; // বাংলার জন্য 'bn-BD' দিতে পারেন
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
 }
 
-// প্রগ্রেস দেখানোর ফাংশন
-function showProgress(data) {
+// ভয়েস শোনার সেটিংস
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.lang = 'en-US'; 
+
+// লোডিং প্রগ্রেস আপডেট
+function onProgress(data) {
     if (data.status === 'progress') {
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        
-        if (!progressContainer) {
-            const container = document.createElement('div');
-            container.id = 'progress-container';
-            container.style.display = 'block';
-            container.innerHTML = '<div id="progress-bar"></div>';
-            chatBox.appendChild(container);
-        }
-
-        const bar = document.getElementById('progress-bar');
-        bar.style.width = data.progress + '%';
-        
-        // টেক্সট আপডেট
-        let statusText = document.getElementById('status-text');
-        if (!statusText) {
-            statusText = document.createElement('p');
-            statusText.id = 'status-text';
-            statusText.style.fontSize = '12px';
-            chatBox.appendChild(statusText);
-        }
-        statusText.innerText = `StudentGPT ডাউনলোড হচ্ছে: ${data.progress.toFixed(1)}%`;
+        const p = data.progress.toFixed(1);
+        progressBar.style.width = p + '%';
+        loadPerc.innerText = p + '%';
+        loadStatus.innerText = "মডেল ডাউনলোড হচ্ছে...";
     } else if (data.status === 'ready') {
-        const container = document.getElementById('progress-container');
-        if (container) container.remove();
-        const statusText = document.getElementById('status-text');
-        if (statusText) statusText.remove();
-        appendMessage('StudentGPT', 'মডেল এখন প্রস্তুত! প্রশ্ন করুন।');
+        loaderArea.style.display = 'none';
+        status.innerText = "AI প্রস্তুত - কথা বলুন";
+        micBtn.disabled = false;
     }
 }
 
-async function loadModel() {
+// এআই লোড করা
+async function loadAI() {
     try {
-        // 'Xenova/flan-t5-small' ব্যবহার করছি কারণ এটি সবচেয়ে ছোট এবং দ্রুত (মাত্র ৬০ এমবি)
         generator = await pipeline('text2text-generation', 'Xenova/flan-t5-small', {
-            progress_callback: showProgress
+            progress_callback: onProgress
         });
-    } catch (error) {
-        console.error("Error:", error);
-        appendMessage('StudentGPT', 'মডেল লোড হতে সমস্যা হচ্ছে। অনুগ্রহ করে পেজটি রিফ্রেশ দিন।');
+    } catch (e) {
+        loadStatus.innerText = "Error!";
+        status.innerText = "ইন্টারনেট চেক করুন";
     }
 }
 
-async function generateResponse(text) {
-    if (!generator) return "দয়া করে মডেল লোড হওয়া পর্যন্ত অপেক্ষা করুন।";
-    const output = await generator(text, { max_new_tokens: 100 });
-    return output[0].generated_text;
-}
-
-sendBtn.onclick = async () => {
-    const text = userInput.value.trim();
-    if (!text || !generator) return;
-    appendMessage('You', text);
-    userInput.value = '';
-    const response = await generateResponse(text);
-    appendMessage('StudentGPT', response);
+// কথা বলা শুরু
+micBtn.onclick = () => {
+    if (!generator) return;
+    micBtn.classList.add('mic-active');
+    status.innerText = "আমি শুনছি...";
+    recognition.start();
 };
 
-window.onload = loadModel;
+recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript;
+    userTextDisplay.innerText = "You: " + transcript;
+    micBtn.classList.remove('mic-active');
+    status.innerText = "ভাবছি...";
+
+    try {
+        const output = await generator(`Answer simply: ${transcript}`, { max_new_tokens: 50 });
+        const response = output[0].generated_text;
+        
+        aiTextDisplay.innerText = response;
+        speak(response);
+        status.innerText = "উত্তর দিচ্ছি...";
+        setTimeout(() => { status.innerText = "AI প্রস্তুত - কথা বলুন"; }, 3000);
+    } catch (err) {
+        status.innerText = "সমস্যা হয়েছে";
+    }
+};
+
+recognition.onerror = () => {
+    micBtn.classList.remove('mic-active');
+    status.innerText = "আবার চেষ্টা করুন";
+};
+
+window.onload = loadAI;
