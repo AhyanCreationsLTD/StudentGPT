@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudentGPT - Your Free AI Study Partner</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="https://raw.githubusercontent.com/username/StudentGPT/main/assets/favicon.png" type="image/png"> <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="https://raw.githubusercontent.com/username/StudentGPT/main/assets/logo.png" alt="StudentGPT Logo"> <span>StudentGPT</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active">
+                    <span class="icon">💬</span> Chat
+                </a>
+                </nav>
+            <div class="settings-link">
+                <a href="#" class="nav-item">
+                    <span class="icon">⚙️</span> Settings
+                </a>
+            </div>
+        </aside>
+
+        <main class="chat-area">
+            <header class="chat-header">
+                StudentGPT - Offline AI Assistant
+            </header>
+
+            <div id="chat-box" class="message-container">
+                <div class="message bot-message initial-message">
+                    <p><strong>StudentGPT:</strong> হ্যালো! আমি StudentGPT, তোমার ব্যক্তিগত AI স্টাডি পার্টনার। আমি সরাসরি তোমার ব্রাউজারে কাজ করি। প্রথমবার মডেল লোড হতে কিছুটা সময় লাগতে পারে। আমাকে AhyanCreationsLTD এর Md. Abdullah তৈরি করেছেন।</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="তোমার প্রশ্ন এখানে লেখো...">
+                <button id="send-btn">Send</button>
+            </div>
+            <p class="footer-text">Powered by Transformers.js & Hosted on GitHub Pages | 100% Free & Private</p>
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
