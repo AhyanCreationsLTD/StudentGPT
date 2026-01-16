@@ -4,54 +4,70 @@ env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 const chatBox = document.getElementById('chat-box');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const micBtn = document.getElementById('mic-btn');
+const textInput = document.getElementById('text-input');
+const submitBtn = document.getElementById('submit-btn');
+const micBtn = document.getElementById('mic-trigger');
 const progressBar = document.getElementById('progress-bar');
-const loadText = document.getElementById('load-text');
+const loadLabel = document.getElementById('load-label');
+const statusDot = document.getElementById('status-dot');
 
-let tutor = null;
-let vision = null;
+let aiModel = null;
+let visionModel = null;
+let isModelReady = false;
 
-// Text-to-Speech
+// Voice Engine
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'en-US';
+
 function speak(text) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; // বাংলা হলে 'bn-BD'
+    u.lang = 'en-US';
+    u.rate = 1.0;
     window.speechSynthesis.speak(u);
 }
 
-// Voice Recognition
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-
-// প্রগ্রেস দেখানো
-function progress(data) {
+// ডাউনলোড প্রগ্রেস লজিক (১, ২, ৩... ১০০)
+function updateProgress(data) {
     if (data.status === 'progress') {
-        const p = data.progress.toFixed(0);
-        progressBar.style.width = p + '%';
-        loadText.innerText = `মডেল লোড হচ্ছে: ${p}%`;
+        const percent = Math.round(data.progress);
+        progressBar.style.width = percent + '%';
+        loadLabel.innerText = `Downloading Model: ${percent}%`;
+        loadLabel.style.color = '#eab308';
     } else if (data.status === 'ready') {
-        document.getElementById('loader').innerHTML = "🟢 Online";
+        // মডেল যখন পুরোপুরি তৈরি
+        isModelReady = true;
+        progressBar.style.width = '100%';
+        setTimeout(() => progressBar.parentElement.style.display = 'none', 1000);
+        loadLabel.innerText = 'Online';
+        loadLabel.style.color = '#10a37f';
+        statusDot.classList.replace('bg-yellow-500', 'bg-emerald-500');
     }
 }
 
-async function init() {
-    // পড়াশোনার জন্য দক্ষ মডেল (Flan-T5)
-    tutor = await pipeline('text2text-generation', 'Xenova/flan-t5-small', { progress_callback: progress });
-    // ইমেজ ক্যাপশনিং মডেল
-    vision = await pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
+async function initAI() {
+    try {
+        // টেক্সট এবং ইমেজ মডেল লোড
+        aiModel = await pipeline('text2text-generation', 'Xenova/flan-t5-small', { progress_callback: updateProgress });
+        visionModel = await pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
+    } catch (e) {
+        loadLabel.innerText = 'Connection Error';
+        statusDot.style.backgroundColor = 'red';
+    }
 }
 
-function appendMessage(role, text) {
+function appendMsg(role, text) {
+    document.getElementById('welcome-screen')?.remove();
     const isBot = role === 'StudentGPT';
     const msgDiv = document.createElement('div');
-    msgDiv.className = 'message';
+    msgDiv.className = 'message-row';
     msgDiv.innerHTML = `
-        <div class="avatar ${isBot ? 'bot-avatar' : 'user-avatar'}">${isBot ? 'S' : 'U'}</div>
-        <div class="content space-y-2">
-            <p class="font-bold text-xs uppercase tracking-widest text-slate-500">${role}</p>
-            <div class="prose prose-invert max-w-none text-slate-200">${text}</div>
+        <div class="inner-content">
+            <div class="avatar ${isBot ? 'bot-avatar' : 'user-avatar'}">${isBot ? 'S' : 'U'}</div>
+            <div class="text-slate-200 text-sm leading-relaxed w-full">
+                <p class="font-bold text-[10px] uppercase text-slate-500 mb-1">${role}</p>
+                <div>${text}</div>
+            </div>
         </div>
     `;
     chatBox.appendChild(msgDiv);
@@ -59,41 +75,58 @@ function appendMessage(role, text) {
 }
 
 async function handleChat() {
-    const text = userInput.value.trim();
-    const file = document.getElementById('file-input').files[0];
-    if (!text && !file) return;
-
-    appendMessage('You', text);
-    userInput.value = "";
-    let context = "";
-
-    // ছবি প্রসেসিং
-    if (file) {
-        const url = URL.createObjectURL(file);
-        const res = await vision(url);
-        context = `[Image context: ${res[0].generated_text}] `;
-        removeImg();
+    // মডেল লোড না হলে সতর্কতা
+    if (!isModelReady) {
+        alert("মডেল লোডিং হচ্ছে, অনুগ্রহ করে ১০০% হওয়া পর্যন্ত অপেক্ষা করে মেসেজ দিন।");
+        return;
     }
 
-    // AI উত্তর (Academic Guardrail)
-    const prompt = `Instruction: You are StudentGPT, a strict academic tutor. Answer educational questions only. If irrelevant, say "I can only help with studies." Context: ${context} Question: ${text}`;
+    const text = textInput.value.trim();
+    const imageFile = document.getElementById('image-upload').files[0];
+    if (!text && !imageFile) return;
+
+    appendMsg('You', text || (imageFile ? "Sent an image." : ""));
+    textInput.value = "";
+    let imageDescription = "";
+
+    // ইমেজ এনালাইসিস
+    if (imageFile) {
+        const imgUrl = URL.createObjectURL(imageFile);
+        const res = await visionModel(imgUrl);
+        imageDescription = `[Student uploaded image showing: ${res[0].generated_text}] `;
+        clearImage();
+    }
+
+    // AI প্রম্পট (Academic Mode)
+    const prompt = `System: You are StudentGPT by AhyanCreationsLTD. Answer only academic questions. 
+                   Context: ${imageDescription} 
+                   Student: ${text}
+                   Assistant:`;
     
     try {
-        const result = await tutor(prompt, { max_new_tokens: 200, temperature: 0.5 });
-        const finalMsg = result[0].generated_text;
-        appendMessage('StudentGPT', finalMsg);
-        speak(finalMsg);
+        const result = await aiModel(prompt, { max_new_tokens: 200, temperature: 0.4 });
+        const aiResponse = result[0].generated_text;
+        appendMsg('StudentGPT', aiResponse);
+        speak(aiResponse);
     } catch (e) {
-        appendMessage('StudentGPT', 'দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না।');
+        appendMsg('StudentGPT', 'দুঃখিত, প্রসেস করার সময় ভুল হয়েছে।');
     }
 }
 
-micBtn.onclick = () => { micBtn.classList.add('mic-active'); recognition.start(); };
-recognition.onresult = (e) => { 
-    micBtn.classList.remove('mic-active');
-    userInput.value = e.results[0][0].transcript;
+micBtn.onclick = () => {
+    if (!isModelReady) return alert("অপেক্ষা করুন, মডেল লোড হচ্ছে...");
+    micBtn.classList.add('pulse-mic');
+    recognition.start();
+};
+
+recognition.onresult = (e) => {
+    micBtn.classList.remove('pulse-mic');
+    textInput.value = e.results[0][0].transcript;
     handleChat();
 };
-sendBtn.onclick = handleChat;
-window.onload = init;
+
+submitBtn.onclick = handleChat;
+textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChat(); } });
+
+window.onload = initAI;
     
