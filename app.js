@@ -3,87 +3,97 @@ import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+const chatBox = document.getElementById('chat-box');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
 const micBtn = document.getElementById('mic-btn');
-const status = document.getElementById('status');
-const userTextDisplay = document.getElementById('user-text');
-const aiTextDisplay = document.getElementById('ai-text');
 const progressBar = document.getElementById('progress-bar');
-const loadStatus = document.getElementById('load-status');
-const loadPerc = document.getElementById('load-perc');
-const loaderArea = document.getElementById('loader-area');
+const loadText = document.getElementById('load-text');
 
-let generator = null;
+let tutor = null;
+let vision = null;
 
-// AI কথা বলার ফাংশন
+// Text-to-Speech
 function speak(text) {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US'; // বাংলার জন্য 'bn-BD' দিতে পারেন
-    utterance.rate = 1.0;
-    window.speechSynthesis.speak(utterance);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; // বাংলা হলে 'bn-BD'
+    window.speechSynthesis.speak(u);
 }
 
-// ভয়েস শোনার সেটিংস
+// Voice Recognition
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
-recognition.lang = 'en-US'; 
 
-// লোডিং প্রগ্রেস আপডেট
-function onProgress(data) {
+// প্রগ্রেস দেখানো
+function progress(data) {
     if (data.status === 'progress') {
-        const p = data.progress.toFixed(1);
+        const p = data.progress.toFixed(0);
         progressBar.style.width = p + '%';
-        loadPerc.innerText = p + '%';
-        loadStatus.innerText = "মডেল ডাউনলোড হচ্ছে...";
+        loadText.innerText = `মডেল লোড হচ্ছে: ${p}%`;
     } else if (data.status === 'ready') {
-        loaderArea.style.display = 'none';
-        status.innerText = "AI প্রস্তুত - কথা বলুন";
-        micBtn.disabled = false;
+        document.getElementById('loader').innerHTML = "🟢 Online";
     }
 }
 
-// এআই লোড করা
-async function loadAI() {
+async function init() {
+    // পড়াশোনার জন্য দক্ষ মডেল (Flan-T5)
+    tutor = await pipeline('text2text-generation', 'Xenova/flan-t5-small', { progress_callback: progress });
+    // ইমেজ ক্যাপশনিং মডেল
+    vision = await pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
+}
+
+function appendMessage(role, text) {
+    const isBot = role === 'StudentGPT';
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message';
+    msgDiv.innerHTML = `
+        <div class="avatar ${isBot ? 'bot-avatar' : 'user-avatar'}">${isBot ? 'S' : 'U'}</div>
+        <div class="content space-y-2">
+            <p class="font-bold text-xs uppercase tracking-widest text-slate-500">${role}</p>
+            <div class="prose prose-invert max-w-none text-slate-200">${text}</div>
+        </div>
+    `;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function handleChat() {
+    const text = userInput.value.trim();
+    const file = document.getElementById('file-input').files[0];
+    if (!text && !file) return;
+
+    appendMessage('You', text);
+    userInput.value = "";
+    let context = "";
+
+    // ছবি প্রসেসিং
+    if (file) {
+        const url = URL.createObjectURL(file);
+        const res = await vision(url);
+        context = `[Image context: ${res[0].generated_text}] `;
+        removeImg();
+    }
+
+    // AI উত্তর (Academic Guardrail)
+    const prompt = `Instruction: You are StudentGPT, a strict academic tutor. Answer educational questions only. If irrelevant, say "I can only help with studies." Context: ${context} Question: ${text}`;
+    
     try {
-        generator = await pipeline('text2text-generation', 'Xenova/flan-t5-small', {
-            progress_callback: onProgress
-        });
+        const result = await tutor(prompt, { max_new_tokens: 200, temperature: 0.5 });
+        const finalMsg = result[0].generated_text;
+        appendMessage('StudentGPT', finalMsg);
+        speak(finalMsg);
     } catch (e) {
-        loadStatus.innerText = "Error!";
-        status.innerText = "ইন্টারনেট চেক করুন";
+        appendMessage('StudentGPT', 'দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না।');
     }
 }
 
-// কথা বলা শুরু
-micBtn.onclick = () => {
-    if (!generator) return;
-    micBtn.classList.add('mic-active');
-    status.innerText = "আমি শুনছি...";
-    recognition.start();
-};
-
-recognition.onresult = async (event) => {
-    const transcript = event.results[0][0].transcript;
-    userTextDisplay.innerText = "You: " + transcript;
+micBtn.onclick = () => { micBtn.classList.add('mic-active'); recognition.start(); };
+recognition.onresult = (e) => { 
     micBtn.classList.remove('mic-active');
-    status.innerText = "ভাবছি...";
-
-    try {
-        const output = await generator(`Answer simply: ${transcript}`, { max_new_tokens: 50 });
-        const response = output[0].generated_text;
-        
-        aiTextDisplay.innerText = response;
-        speak(response);
-        status.innerText = "উত্তর দিচ্ছি...";
-        setTimeout(() => { status.innerText = "AI প্রস্তুত - কথা বলুন"; }, 3000);
-    } catch (err) {
-        status.innerText = "সমস্যা হয়েছে";
-    }
+    userInput.value = e.results[0][0].transcript;
+    handleChat();
 };
-
-recognition.onerror = () => {
-    micBtn.classList.remove('mic-active');
-    status.innerText = "আবার চেষ্টা করুন";
-};
-
-window.onload = loadAI;
+sendBtn.onclick = handleChat;
+window.onload = init;
+    
