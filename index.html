@@ -3,34 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StudentGPT</title>
+    <title>StudentGPT | Private AI Engine</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div id="splash">
-        <div class="logo">S</div>
-        <h2>StudentGPT</h2>
-        <p id="st">Loading AI Models...</p>
-        <div class="bar-bg"><div id="bar"></div></div>
-        <p id="pc">0%</p>
+    <div id="splash-screen">
+        <div class="splash-content">
+            <img src="https://drive.google.com/uc?export=view&id=17x9SXsvT2dpB34etZyp39R2tDx_xcPll" alt="StudentGPT Logo" class="splash-logo">
+            <h1 class="app-name">StudentGPT</h1>
+            <p class="intro-text">স্টুডেন্ট জিপিটি তে আপনাকে স্বাগতম! আমি আপনার পড়াশোনার সঙ্গী। আমাকে তৈরি করেছেন মোঃ আব্দুল্লাহ (আহিয়ান ক্রিয়েশন লিমিটেড)।</p>
+            
+            <div class="loader-container">
+                <div id="progress-bar"></div>
+            </div>
+            <p id="loading-status">মডেল লোড হচ্ছে: 0%</p>
+        </div>
     </div>
 
-    <div id="main-app">
-        <div class="header">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:35px; height:35px; background:#0084ff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">S</div>
-                <b>StudentGPT Pro</b>
+    <div id="app-container" class="hidden">
+        <header class="app-header">
+            <div class="user-info">
+                <div class="avatar">S</div>
+                <div>
+                    <h3>StudentGPT Pro</h3>
+                    <span class="status">অনলাইন</span>
+                </div>
             </div>
-            <button id="call" style="background:none; border:none; font-size:20px;">📞</button>
-        </div>
+            <div class="header-actions">
+                <button id="call-btn" title="সরাসরি কথা বলুন">📞</button>
+            </div>
+        </header>
 
-        <div class="chat-area" id="box"></div>
+        <main id="chat-box" class="chat-area">
+            </main>
 
-        <footer>
-            <label style="font-size:22px; cursor:pointer;">📷<input type="file" id="fi" style="display:none"></label>
-            <input type="text" id="ui" placeholder="Aa" autocomplete="off">
-            <button id="sb" style="background:none; border:none; font-size:22px;">➤</button>
+        <footer class="input-area">
+            <div id="preview-container" class="hidden">
+                <img id="image-preview" src="">
+                <button id="remove-img">×</button>
+            </div>
+            
+            <div class="input-wrapper">
+                <label for="image-upload" class="icon-btn">
+                    📷
+                    <input type="file" id="image-upload" accept="image/*" hidden>
+                </label>
+                <input type="text" id="user-input" placeholder="আপনার প্রশ্ন লিখুন..." autocomplete="off">
+                <button id="send-btn" class="icon-btn">➤</button>
+            </div>
         </footer>
     </div>
 
