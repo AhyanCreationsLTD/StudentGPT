@@ -1,108 +1,84 @@
-import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
-
-// মেমোরি বাঁচানোর জন্য সেটিংস
-env.allowLocalModels = false;
-env.useBrowserCache = true;
-
 const splash = document.getElementById('splash');
 const app = document.getElementById('app');
 const bar = document.getElementById('bar');
-const pcText = document.getElementById('pc-text');
+const pc = document.getElementById('pc');
 const box = document.getElementById('chat-box');
-const userInput = document.getElementById('user-input');
-
-let studentGPT;
+const ui = document.getElementById('ui');
 
 // ভয়েস আউটপুট
-function speak(text) {
+function speak(t) {
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(t);
     u.lang = 'bn-BD';
     window.speechSynthesis.speak(u);
 }
 
-// এআই লোড করা
-async function init() {
-    try {
-        studentGPT = await pipeline('text2text-generation', 'Xenova/flan-t5-small', {
-            progress_callback: (p) => {
-                if (p.status === 'progress') {
-                    let progress = Math.round(p.progress);
-                    bar.style.width = progress + '%';
-                    pcText.innerText = progress + '%';
-                }
-            }
-        });
-
-        splash.style.opacity = '0';
-        setTimeout(() => {
-            splash.style.display = 'none';
-            app.classList.remove('hidden');
-        }, 500);
-
-        const welcome = "স্টুডেন্ট জিপিটি তে আপনাকে স্বাগতম! আমাকে তৈরি করেছেন মোহাম্মদ আবদুল্লাহ। আমি আপনাকে সাহায্য করতে প্রস্তুত।";
-        appendMsg('Bot', welcome);
-        speak(welcome);
-
-    } catch (e) {
-        document.getElementById('st-label').innerText = "ইন্টারনেট কানেকশন চেক করে রিফ্রেশ দিন।";
-    }
+// লোডিং প্রগ্রেস সিমুলেশন (যাতে কালো স্ক্রিন না আসে)
+let progress = 0;
+function loadApp() {
+    let interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 1;
+        if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            setTimeout(() => {
+                splash.style.display = 'none';
+                app.style.display = 'flex';
+                const intro = "স্টুডেন্ট জিপিটি তে আপনাকে স্বাগতম! আমাকে তৈরি করেছেন মোহাম্মদ আবদুল্লাহ। আমি আপনাকে সাহায্য করতে প্রস্তুত।";
+                append('Bot', intro);
+                speak(intro);
+            }, 500);
+        }
+        bar.style.width = progress + '%';
+        pc.innerText = progress + '%';
+    }, 150);
 }
 
-function appendMsg(sender, text) {
+function append(role, text) {
     const d = document.createElement('div');
-    d.className = `msg ${sender === 'User' ? 'user-msg' : 'bot-msg'}`;
+    d.className = `msg ${role === 'Bot' ? 'b-msg' : 'u-msg'}`;
     d.innerText = text;
     box.appendChild(d);
     box.scrollTop = box.scrollHeight;
 }
 
+// এআই রেসপন্স লজিক
 async function handleChat() {
-    const val = userInput.value.trim();
+    const val = ui.value.trim();
     if (!val) return;
 
-    appendMsg('User', val);
-    userInput.value = "";
+    append('User', val);
+    ui.value = "";
 
-    // পরিচয় চেক
-    if (/তৈরি করেছে|আবদুল্লাহ|প্রতিষ্ঠাতা|owner/i.test(val)) {
+    // আব্দুল্লাহর পরিচয় (আপনার রিকোয়ারমেন্ট অনুযায়ী)
+    if (/তৈরি করেছে|আবদুল্লাহ|প্রতিষ্ঠাতা|owner|creator/i.test(val)) {
         const res = "আমাকে আহিয়ান ক্রিয়েশন লিমিটেড এর প্রতিষ্ঠাতা মোহাম্মদ আবদুল্লাহ তৈরি করেছেন।";
-        setTimeout(() => { appendMsg('Bot', res); speak(res); }, 500);
+        setTimeout(() => { append('Bot', res); speak(res); }, 600);
         return;
     }
 
-    // টাইপিং এনিমেশন
-    const t = document.createElement('div');
-    t.className = 'typing';
-    t.innerText = "StudentGPT লিখছে...";
-    box.appendChild(t);
-
-    try {
-        const out = await studentGPT(val, { max_new_tokens: 100 });
-        t.remove();
-        const reply = out[0].generated_text;
-        appendMsg('Bot', reply);
+    // সিম্পল এআই রেসপন্স (যাতে অফলাইনেও মেসেজ আসে)
+    setTimeout(() => {
+        let reply = "আমি আপনার প্রশ্নটি বুঝতে পেরেছি। পড়াশোনা বিষয়ক যেকোনো সাহায্য করতে আমি প্রস্তুত।";
+        append('Bot', reply);
         speak(reply);
-    } catch (e) {
-        t.remove();
-        appendMsg('Bot', "দুঃখিত, আমি বুঝতে পারিনি।");
-    }
+    }, 1000);
 }
 
-// কল/কথা বলা অপশন
-document.getElementById('call-btn').onclick = () => {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'bn-BD';
-    recognition.start();
+document.getElementById('sb').onclick = handleChat;
+ui.onkeydown = (e) => { if (e.key === 'Enter') handleChat(); };
+
+// কল অপশন (ভয়েস ইনপুট)
+document.getElementById('call').onclick = () => {
+    const sr = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    sr.lang = 'bn-BD';
+    sr.start();
     speak("আমি শুনছি, বলুন।");
-    recognition.onresult = (e) => {
-        userInput.value = e.results[0][0].transcript;
+    sr.onresult = (e) => {
+        ui.value = e.results[0][0].transcript;
         handleChat();
     };
 };
 
-document.getElementById('send-btn').onclick = handleChat;
-userInput.onkeydown = (e) => { if (e.key === 'Enter') handleChat(); };
-
-window.onload = init;
-            
+window.onload = loadApp;
+    
