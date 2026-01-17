@@ -5,44 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StudentGPT | Official</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div id="splash">
-        <div class="splash-content">
-            <div class="logo">S</div>
+        <div class="splash-box">
+            <div class="logo">AhyanCreationsLTD</div>
             <h1>StudentGPT</h1>
-            <p id="st-label">সিস্টেম প্রস্তুত হচ্ছে...</p>
-            <div class="progress-box">
-                <div id="bar"></div>
-            </div>
-            <p id="pc-text">0%</p>
+            <p id="st-text">সিস্টেম প্রস্তুত হচ্ছে...</p>
+            <div class="bar-bg"><div id="bar"></div></div>
+            <p id="pc">0%</p>
         </div>
     </div>
 
-    <div id="app" class="hidden">
+    <div id="app" style="display: none;">
         <header>
             <div class="brand">
                 <div class="avatar">S</div>
-                <div>
-                    <h2>StudentGPT</h2>
-                    <span class="online-dot">● Online</span>
-                </div>
+                <b>StudentGPT Pro</b>
             </div>
-            <button id="call-btn" title="কথা বলুন">📞</button>
+            <button id="call">📞</button>
         </header>
 
         <main id="chat-box"></main>
 
         <footer>
-            <div class="input-container">
-                <input type="text" id="user-input" placeholder="আপনার প্রশ্নটি লিখুন..." autocomplete="off">
-                <button id="send-btn">➤</button>
+            <div class="input-wrap">
+                <input type="text" id="ui" placeholder="আপনার প্রশ্নটি লিখুন..." autocomplete="off">
+                <button id="sb">➤</button>
             </div>
         </footer>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
