@@ -1,84 +1,72 @@
 const splash = document.getElementById('splash');
 const app = document.getElementById('app');
 const bar = document.getElementById('bar');
-const pc = document.getElementById('pc');
-const box = document.getElementById('chat-box');
-const ui = document.getElementById('ui');
+const pcText = document.getElementById('pc-text');
+const chatBox = document.getElementById('chat-box');
+const userInput = document.getElementById('user-input');
+const typing = document.getElementById('typing-indicator');
 
-// ভয়েস আউটপুট
-function speak(t) {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang = 'bn-BD';
-    window.speechSynthesis.speak(u);
-}
-
-// লোডিং প্রগ্রেস সিমুলেশন (যাতে কালো স্ক্রিন না আসে)
+// ১. স্মুথ লোডিং প্রসেস
 let progress = 0;
-function loadApp() {
-    let interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 10) + 1;
+window.onload = () => {
+    let loadTimer = setInterval(() => {
+        progress += Math.floor(Math.random() * 7) + 3;
         if (progress >= 100) {
             progress = 100;
-            clearInterval(interval);
+            clearInterval(loadTimer);
             setTimeout(() => {
-                splash.style.display = 'none';
-                app.style.display = 'flex';
-                const intro = "স্টুডেন্ট জিপিটি তে আপনাকে স্বাগতম! আমাকে তৈরি করেছেন মোহাম্মদ আবদুল্লাহ। আমি আপনাকে সাহায্য করতে প্রস্তুত।";
-                append('Bot', intro);
-                speak(intro);
+                splash.classList.add('hidden');
+                app.classList.remove('hidden');
+                appendMessage('Bot', "স্টুডেন্ট জিপিটি তে আপনাকে স্বাগতম! আমি আপনার পড়াশোনার সঙ্গী। আমাকে তৈরি করেছেন মোহাম্মদ আবদুল্লাহ।");
             }, 500);
         }
         bar.style.width = progress + '%';
-        pc.innerText = progress + '%';
-    }, 150);
-}
-
-function append(role, text) {
-    const d = document.createElement('div');
-    d.className = `msg ${role === 'Bot' ? 'b-msg' : 'u-msg'}`;
-    d.innerText = text;
-    box.appendChild(d);
-    box.scrollTop = box.scrollHeight;
-}
-
-// এআই রেসপন্স লজিক
-async function handleChat() {
-    const val = ui.value.trim();
-    if (!val) return;
-
-    append('User', val);
-    ui.value = "";
-
-    // আব্দুল্লাহর পরিচয় (আপনার রিকোয়ারমেন্ট অনুযায়ী)
-    if (/তৈরি করেছে|আবদুল্লাহ|প্রতিষ্ঠাতা|owner|creator/i.test(val)) {
-        const res = "আমাকে আহিয়ান ক্রিয়েশন লিমিটেড এর প্রতিষ্ঠাতা মোহাম্মদ আবদুল্লাহ তৈরি করেছেন।";
-        setTimeout(() => { append('Bot', res); speak(res); }, 600);
-        return;
-    }
-
-    // সিম্পল এআই রেসপন্স (যাতে অফলাইনেও মেসেজ আসে)
-    setTimeout(() => {
-        let reply = "আমি আপনার প্রশ্নটি বুঝতে পেরেছি। পড়াশোনা বিষয়ক যেকোনো সাহায্য করতে আমি প্রস্তুত।";
-        append('Bot', reply);
-        speak(reply);
-    }, 1000);
-}
-
-document.getElementById('sb').onclick = handleChat;
-ui.onkeydown = (e) => { if (e.key === 'Enter') handleChat(); };
-
-// কল অপশন (ভয়েস ইনপুট)
-document.getElementById('call').onclick = () => {
-    const sr = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    sr.lang = 'bn-BD';
-    sr.start();
-    speak("আমি শুনছি, বলুন।");
-    sr.onresult = (e) => {
-        ui.value = e.results[0][0].transcript;
-        handleChat();
-    };
+        pcText.innerText = progress + '%';
+    }, 100);
 };
 
-window.onload = loadApp;
-    
+// ২. মেসেজ যোগ করার ফাংশন
+function appendMessage(sender, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `msg ${sender === 'User' ? 'user-msg' : 'bot-msg'}`;
+    msgDiv.innerText = text;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ৩. চ্যাট হ্যান্ডলিং (শুধুমাত্র টেক্সট)
+async function handleChat() {
+    const question = userInput.value.trim();
+    if (!question) return;
+
+    appendMessage('User', question);
+    userInput.value = "";
+    typing.classList.remove('hidden');
+
+    // এআই রেসপন্স সিমুলেশন
+    setTimeout(() => {
+        typing.classList.add('hidden');
+        let answer = "";
+
+        const lowerQ = question.toLowerCase();
+        
+        // আব্দুল্লাহর পরিচয়
+        if (lowerQ.includes("তৈরি") || lowerQ.includes("আবদুল্লাহ") || lowerQ.includes("owner") || lowerQ.includes("creator")) {
+            answer = "আমাকে আহিয়ান ক্রিয়েশন লিমিটেড এর প্রতিষ্ঠাতা মোহাম্মদ আবদুল্লাহ তৈরি করেছেন।";
+        } 
+        // সেফটি ফিল্টার
+        else if (lowerQ.match(/sex|porn|kill|bad|১৮\+|খারাপ/)) {
+            answer = "দুঃখিত, আমি কেবল পড়াশোনা এবং শিক্ষামূলক প্রশ্নের উত্তর দিতে পারি।";
+        } 
+        // সাধারণ উত্তর
+        else {
+            answer = "আপনার প্রশ্নটি আমি বুঝতে পেরেছি। স্টুডেন্ট জিপিটি হিসেবে আমি আপনাকে গণিত, বিজ্ঞান বা যেকোনো বিষয়ে সাহায্য করতে প্রস্তুত। দয়া করে আপনার নির্দিষ্ট প্রশ্নটি লিখুন।";
+        }
+
+        appendMessage('Bot', answer);
+    }, 1200);
+}
+
+// ইভেন্ট লিসেনার
+document.getElementById('send-btn').onclick = handleChat;
+userInput.onkeypress = (e) => { if (e.key === 'Enter') handleChat(); };
