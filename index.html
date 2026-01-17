@@ -3,36 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StudentGPT | Your Home Tutor</title>
+    <title>StudentGPT | Official</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div id="splash">
         <div class="splash-box">
-            <div class="logo"><img src="https://github.com/AhyanCreationsLTD/StudentGPT/blob/main/logo.png"</img></div>
+            <img src="https://raw.githubusercontent.com/AhyanCreationsLTD/StudentGPT/main/logo.png" alt="Logo" class="main-logo" onerror="this.src='https://via.placeholder.com/100?text=S'">
             <h1>StudentGPT</h1>
-            <p id="st-text">সিস্টেম প্রস্তুত হচ্ছে...</p>
-            <div class="bar-bg"><div id="bar"></div></div>
-            <p id="pc">0%</p>
+            <p id="st-text">সিস্টেম লোড হচ্ছে...</p>
+            <div class="bar-container"><div id="bar"></div></div>
+            <p id="pc-text">0%</p>
+            <p class="intro-small">প্রতিষ্ঠাতা: মোহাম্মদ আবদুল্লাহ</p>
         </div>
     </div>
 
-    <div id="app" style="display: none;">
+    <div id="app" class="hidden">
         <header>
-            <div class="brand">
-                <div class="avatar">S</div>
-                <b>StudentGPT Pro</b>
+            <div class="header-info">
+                <img src="https://raw.githubusercontent.com/AhyanCreationsLTD/StudentGPT/main/logo.png" class="header-logo" onerror="this.src='https://via.placeholder.com/40?text=S'">
+                <div>
+                    <h2>StudentGPT</h2>
+                    <span class="online">● অনলাইন</span>
+                </div>
             </div>
-            <button id="call">📞</button>
         </header>
 
         <main id="chat-box"></main>
 
         <footer>
-            <div class="input-wrap">
-                <input type="text" id="ui" placeholder="আপনার প্রশ্নটি লিখুন..." autocomplete="off">
-                <button id="sb">➤</button>
+            <div id="typing-indicator" class="hidden">StudentGPT লিখছে...</div>
+            <div class="input-row">
+                <input type="text" id="user-input" placeholder="আপনার প্রশ্নটি লিখুন..." autocomplete="off">
+                <button id="send-btn">➤</button>
             </div>
         </footer>
     </div>
